@@ -1,6 +1,7 @@
 
 -- Generic useful variables
 local DHE_playerUID = UnitGUID("player")
+local DHE_settingsVersion = 2
 local DHE_className, DHE_classFilename, DHE_classId = UnitClass("player")
 
 -- Check that the user is actually playing a demon hunter.
@@ -11,7 +12,7 @@ end
 ------
 -- Global settings variable
 DHE_settings = {
-    initialized = false
+    version = DHE_settingsVersion,
 }
 
 ------
@@ -19,7 +20,7 @@ DHE_settings = {
 local DHE_settingsDefault = {
     initialized = true,
      -- Global cooldown between each individual sound effect. (Can be overridden for Meta for instance)
-    soundGlobalCooldown = 8, -- seconds
+    soundGlobalCooldown = 14, -- seconds
     -- Chance for each category of sound effect to trigger
     probabilityTable = {
         AFKEND = 1.0,
@@ -28,6 +29,7 @@ local DHE_settingsDefault = {
         ATTACK = 0.5,
         DEATH = 1.0,
         META = 1.0,
+        HUNT = 1.0,
         MOUNT = 1.0,
         REVIVE = 1.0,
         SELECT = 1.0,
@@ -83,6 +85,10 @@ local DHE_settingsDefault = {
             ["metamorphosis\\notprepared.ogg"] = 1,
             ["metamorphosis\\feelhatred.ogg"] = 1,
         },
+        HUNT = {
+            ["metamorphosis\\notprepared.ogg"] = 1,
+            ["metamorphosis\\feelhatred.ogg"] = 1,
+        },
         MOUNT = {
             ["mount\\ialonemustact.ogg"] = 1,
             ["mount\\letsmoveout.ogg"] = 1,
@@ -112,14 +118,26 @@ local DHE_playerWasAFK = UnitIsAFK("player")
 local DHE_playerWasMounted = IsMounted()
 local DHE_playerInMetamorphosis = false
 local DHE_currentSoundHandle = nil
+local DHE_lastSoundTimestamp = nil
+local DHE_lastFilenamePlayed = nil
+
+function DHE_isSoundCooldown()
+    if not DHE_lastSoundTimestamp then
+        return false
+    end
+    local currentTime = GetServerTime()
+    
+    return currentTime - DHE_lastSoundTimestamp < DHE_settings.soundGlobalCooldown
+end
 
 function DHE_handleSoundEvent(event, overrideCooldown)
+    
     -- If we are on cooldown don't play anything.
-    if DHE_currentSoundHandle ~= nil and not overrideCooldown then
+    if DHE_isSoundCooldown() and not overrideCooldown then
         return nil
     end
-
-    -- If we override the cooldown for important noises, then close the previous sound first
+    
+    -- Stop the previous sound effect if its still playing. This is mostly useful for override sounds.
     if DHE_currentSoundHandle ~= nil then
         StopSound(DHE_currentSoundHandle, 0)
     end
@@ -127,11 +145,23 @@ function DHE_handleSoundEvent(event, overrideCooldown)
     -- Roll to see if we want to play a sound
     local playSoundRoll = fastrandom()
     if playSoundRoll >= DHE_settings.probabilityTable[event] then
-        return 0
+        return nil
     end
 
     -- We rolled to play the sound effect, now use the particular event's probability table to determine which one to play
     local probabilities = DHE_settings.soundProbabilityTable[event]
+
+    -- Remove the previously played sound effect from the table so we don't roll it twice in a row.
+    local originalProbability = nil
+    if DHE_lastFilenamePlayed ~= nil then
+        for filename, soundProbability in pairs(probabilities) do
+            if filename == DHE_lastFilenamePlayed then
+                originalProbability = soundProbability
+                probabilities[filename] = 0
+                break
+            end
+        end
+    end
 
     -- First calculate the total number of sides of the dice to use
     local totalSides = 0
@@ -150,11 +180,20 @@ function DHE_handleSoundEvent(event, overrideCooldown)
     local willPlaySound = false
     for filename, soundProbability in pairs(probabilities) do
         if (cumulativeRange <= roll) and (roll < cumulativeRange + soundProbability) then
+            
+            -- Restore the original probability to the previous sound played
+            if originalProbability ~= nil and originalProbability > 0 then
+                for f, s in pairs(probabilities) do
+                    if f == DHE_lastFilenamePlayed then
+                        probabilities[f] = originalProbability
+                        break
+                    end
+                end
+            end
             willPlaySound, DHE_currentSoundHandle = PlaySoundFile("Interface\\AddOns\\DemonHunterExperience\\sounds\\" .. filename, "Dialog")
-            -- Start a global cooldown timer to prevent audio from overlapping too much
-            C_Timer.After(DHE_settings.soundGlobalCooldown, function()
-                DHE_currentSoundHandle = nil
-            end)
+            DHE_lastFilenamePlayed = filename
+            DHE_lastSoundTimestamp = GetServerTime()
+            break
         end
         cumulativeRange = cumulativeRange + soundProbability
     end
@@ -168,21 +207,21 @@ function DHE_events:COMBAT_LOG_EVENT_UNFILTERED(...)
 	local spellId, spellName, spellSchool
 	local amount, overkill, school, resisted, blocked, absorbed, critical, glancing, crushing, isOffHand
 	if subevent == "SWING_DAMAGE" then
-		amount, overkill, school, resisted, blocked, absorbed, critical, glancing, crushing, isOffHand = select(12, CombatLogGetCurrentEventInfo())
-	elseif subevent == "SPELL_DAMAGE" then
-		spellId, spellName, spellSchool, amount, overkill, school, resisted, blocked, absorbed, critical, glancing, crushing, isOffHand = select(12, CombatLogGetCurrentEventInfo())
+        amount, overkill, school, resisted, blocked, absorbed, critical, glancing, crushing, isOffHand = select(12, CombatLogGetCurrentEventInfo())
+	else
+        spellId, spellName, spellSchool, amount, overkill, school, resisted, blocked, absorbed, critical, glancing, crushing, isOffHand = select(12, CombatLogGetCurrentEventInfo())
     end
 
     -- filter to only check for things that we've done
     if sourceGUID ~= DHE_playerUID then
         return nil
     end
-
+    --print(subevent, spellId, spellName, spellSchool)
     -- Check to see if one of the "attack" spells was used
     -- Vengenace
     --  - Disrupt 183752
-    --  - Soul Cleave 228477
-    --  - Fracture 263642
+    --  - Soul Cleave 228478
+    --  - Fracture 225919 225921
     --  - Felblade 232893
     -- Havoc
     --  - Demon's Bite 162243
@@ -192,9 +231,12 @@ function DHE_events:COMBAT_LOG_EVENT_UNFILTERED(...)
     --  - Annihilation1 201427
     --  - Annihilation2 201428
     --  - Annihilation3 227518
-    if     spellId == 183752
-        or spellId == 228477
-        or spellId == 263642
+    if subevent == "SPELL_CAST_SUCCESS" and
+    (
+           spellId == 183752
+        or spellId == 228478
+        or spellId == 225919
+        or spellId == 225921
         or spellId == 232893
         or spellId == 162243
         or spellId == 222031
@@ -203,8 +245,13 @@ function DHE_events:COMBAT_LOG_EVENT_UNFILTERED(...)
         or spellId == 201427
         or spellId == 201428
         or spellId == 227518
+    )
     then
         DHE_handleSoundEvent("ATTACK")
+    end
+    -- Night Fae "The Hunt" ability
+    if subevent == "SPELL_CAST_START" and spellId == 323639 then
+        DHE_handleSoundEvent("HUNT", true)
     end
 end
 
@@ -264,7 +311,8 @@ end
 function DHE_events:ADDON_LOADED(...)
     local addonName = ...
     if addonName == "DemonHunterExperience" then
-        if not DHE_settings.initialized then
+        -- Update the settings with the new version. TODO don't override changed settings.
+        if DHE_settings.version ~= DHE_settingsVersion then
             DHE_settings = DHE_settingsDefault
         end
     end

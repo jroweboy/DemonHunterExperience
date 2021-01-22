@@ -2,7 +2,7 @@
 ## Title: Demon Hunter Experience
 ## Notes: Restores the true Demon Hunter Experience
 ## Author: jroweboy
-## Version: 1.0.0
+## Version: 1.1.0
 ## SavedVariablesPerCharacter: DHE_settings
 
 DHE_main.lua

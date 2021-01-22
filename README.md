@@ -12,6 +12,18 @@ Restore the true Demon Hunter Experience with this simple addon.
 
 All audio is played through the `Dialog` channel which will allow you to crank the volume to max without affecting your regular gameplay too much.
 
+## Patch Notes
+
+### v1.0
+- Initial application launch.
+
+### v1.1
+- Added "The Hunt" voice lines
+- Prevent a sound effect from playing two times in a row
+- Fixed sound effect cooldowns, so they don't sometimes overlap.
+- Upped the sound effect cooldown to 14 seconds.
+- Voice lines for Vengence spec Demon Hunter works better.
+
 ## Installation
 
 Standard WoW addon installation. Also available on CurseForge.
@@ -38,6 +50,10 @@ Standard WoW addon installation. Also available on CurseForge.
 
 ### Entering Metamorphosis (through skill or through Eye Beam)
 - "Now I am complete!"
+- "Feel the hatred of 10,000 years!"
+- "You are not prepared!"
+
+### Casting Night Fae "The Hunt"
 - "Feel the hatred of 10,000 years!"
 - "You are not prepared!"
 
