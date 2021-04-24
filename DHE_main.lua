@@ -1,7 +1,7 @@
 
 -- Generic useful variables
 local DHE_playerUID = UnitGUID("player")
-local DHE_settingsVersion = 2
+local DHE_settingsVersion = 3
 local DHE_className, DHE_classFilename, DHE_classId = UnitClass("player")
 
 -- Check that the user is actually playing a demon hunter.
@@ -19,6 +19,7 @@ DHE_settings = {
 -- Default values for the settings
 local DHE_settingsDefault = {
     initialized = true,
+    version = DHE_settingsVersion,
      -- Global cooldown between each individual sound effect. (Can be overridden for Meta for instance)
     soundGlobalCooldown = 14, -- seconds
     -- Chance for each category of sound effect to trigger
@@ -312,6 +313,9 @@ function DHE_events:ADDON_LOADED(...)
     local addonName = ...
     if addonName == "DemonHunterExperience" then
         -- Update the settings with the new version. TODO don't override changed settings.
+        if not DHE_settings.initialized then
+            DHE_settings = DHE_settingsDefault
+        end
         if DHE_settings.version ~= DHE_settingsVersion then
             DHE_settings = DHE_settingsDefault
         end

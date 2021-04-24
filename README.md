@@ -24,6 +24,9 @@ All audio is played through the `Dialog` channel which will allow you to crank t
 - Upped the sound effect cooldown to 14 seconds.
 - Voice lines for Vengence spec Demon Hunter works better.
 
+### v1.1.1
+- Fixed the issue with loading on the first time run
+
 ## Installation
 
 Standard WoW addon installation. Also available on CurseForge.
