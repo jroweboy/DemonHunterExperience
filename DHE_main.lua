@@ -217,41 +217,40 @@ function DHE_events:COMBAT_LOG_EVENT_UNFILTERED(...)
     if sourceGUID ~= DHE_playerUID then
         return nil
     end
-    --print(subevent, spellId, spellName, spellSchool)
+
     -- Check to see if one of the "attack" spells was used
-    -- Vengenace
-    --  - Disrupt 183752
-    --  - Soul Cleave 228478
-    --  - Fracture 225919 225921
-    --  - Felblade 232893
-    -- Havoc
-    --  - Demon's Bite 162243
-    --  - Chaos Strike 222031
-    --  - Blade Dance 199552
-    --  - Death Sweep 210152
-    --  - Annihilation1 201427
-    --  - Annihilation2 201428
-    --  - Annihilation3 227518
+    -- Debugging: uncomment to show what your recent attack skill ids are
+    --print(subevent, spellId, spellName, spellSchool)
     if subevent == "SPELL_CAST_SUCCESS" and
     (
-           spellId == 183752
-        or spellId == 228478
-        or spellId == 225919
-        or spellId == 225921
-        or spellId == 232893
-        or spellId == 162243
-        or spellId == 222031
-        or spellId == 199552
-        or spellId == 210152
-        or spellId == 201427
-        or spellId == 201428
-        or spellId == 227518
+        -- Vengenace
+           spellId == 183752 -- Disrupt
+        or spellId == 228478 -- Soul Cleave
+        or spellId == 225919 -- Fracture
+        or spellId == 225921 -- Fracture ... also?
+        or spellId == 232893 -- Felblade
+        -- Havoc
+        or spellId == 162243 -- Demon's Bite
+        or spellId == 344859 -- Demon's Bite new?
+        or spellId == 222031 -- Chaos Strike
+        or spellId == 344862 -- Chaos Strike new?
+        or spellId == 199552 -- Blade Dance
+        or spellId == 210152 -- Death Sweep
+        or spellId == 201427 -- Annihilation1
+        or spellId == 201428 -- Annihilation2
+        or spellId == 227518 -- Annihilation3
+        or spellId == 213405 -- Master of the Glaive
     )
     then
         DHE_handleSoundEvent("ATTACK")
     end
-    -- Night Fae "The Hunt" ability
-    if subevent == "SPELL_CAST_START" and spellId == 323639 then
+
+    if subevent == "SPELL_CAST_START" and
+    (
+           spellId == 323639 -- Night Fae "The Hunt" ability
+        or spellId == 370965 -- Talent "The Hunt" ability
+    )
+    then
         DHE_handleSoundEvent("HUNT", true)
     end
 end
