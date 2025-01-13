@@ -277,8 +277,7 @@ function DHE_events:UNIT_AURA(...)
     end
     -- Check if the player hopped into meta just now
     local isInMeta = false
-    for i=1,40 do
-        local name = UnitBuff("player",i)
+    AuraUtil.ForEachAura("player", "HELPFUL", nil, function(name, ...)
         if name == "Metamorphosis" then
             isInMeta = true
             if not DHE_playerInMetamorphosis then
@@ -286,7 +285,7 @@ function DHE_events:UNIT_AURA(...)
                 DHE_handleSoundEvent("META", true)
             end
         end
-    end
+    end)
     if not isInMeta and DHE_playerInMetamorphosis then
         DHE_playerInMetamorphosis = false
     end
