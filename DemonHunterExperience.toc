@@ -1,4 +1,4 @@
-## Interface: 100002
+## Interface: 110007
 ## Title: Demon Hunter Experience
 ## Notes: Restores the true Demon Hunter Experience
 ## Author: jroweboy
