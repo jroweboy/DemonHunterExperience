@@ -14,6 +14,11 @@ All audio is played through the `Dialog` channel which will allow you to crank t
 
 ## Patch Notes
 
+### v1.2.1
+
+* Updated for the latest wow version
+  * Thanks @Congoblast for the fix!
+
 ### v1.2.0
 
 * Updated for DragonFlight
